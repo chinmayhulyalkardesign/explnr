@@ -32,15 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
-
-# database (contains real personal financial data — never commit)
-/prisma/*.db
-/prisma/*.db-journal
-/prisma/*.db-wal
-/prisma/*.db-shm
 
 # typescript
 *.tsbuildinfo
