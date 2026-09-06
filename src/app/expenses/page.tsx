@@ -3,9 +3,10 @@
 import { FormEvent, useState } from "react";
 import useSWR, { mutate } from "swr";
 import MonthPicker from "@/components/MonthPicker";
+import ImportModal from "@/components/ImportModal";
 import { currentMonthKey, formatMoney } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
-import type { Category, Expense } from "@/lib/types";
+import type { Category, Expense, ExpenseType } from "@/lib/types";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -19,10 +20,12 @@ export default function ExpensesPage() {
 
   const [categoryId, setCategoryId] = useState("");
   const [amount, setAmount] = useState("");
+  const [type, setType] = useState<ExpenseType>("DEBIT");
   const [date, setDate] = useState(todayIso());
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const selectedCategoryId = categoryId || categories?.[0]?.id || "";
 
@@ -41,6 +44,7 @@ export default function ExpensesPage() {
         body: JSON.stringify({
           categoryId: selectedCategoryId,
           amount: Number(amount),
+          type,
           date,
           description: description || undefined,
         }),
@@ -51,7 +55,9 @@ export default function ExpensesPage() {
       }
       setAmount("");
       setDescription("");
+      setType("DEBIT");
       mutate(expensesKey);
+      mutate((key) => typeof key === "string" && key.startsWith("/api/summary"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -63,9 +69,11 @@ export default function ExpensesPage() {
     if (!confirm("Delete this expense?")) return;
     await fetch(`/api/expenses/${id}`, { method: "DELETE" });
     mutate(expensesKey);
+    mutate((key) => typeof key === "string" && key.startsWith("/api/summary"));
   }
 
-  const total = (expenses ?? []).reduce((sum, e) => sum + e.amount, 0);
+  const debitTotal = (expenses ?? []).filter((e) => e.type === "DEBIT").reduce((sum, e) => sum + e.amount, 0);
+  const creditTotal = (expenses ?? []).filter((e) => e.type === "CREDIT").reduce((sum, e) => sum + e.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -75,7 +83,7 @@ export default function ExpensesPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="rounded-lg border border-neutral-200 bg-white p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_auto_1fr_auto]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_100px_auto_auto_1fr_auto]">
           <select
             required
             value={selectedCategoryId}
@@ -88,6 +96,14 @@ export default function ExpensesPage() {
                 {c.name}
               </option>
             ))}
+          </select>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as ExpenseType)}
+            className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          >
+            <option value="DEBIT">Debit</option>
+            <option value="CREDIT">Credit</option>
           </select>
           <input
             required
@@ -124,9 +140,20 @@ export default function ExpensesPage() {
       </form>
 
       <div className="rounded-lg border border-neutral-200 bg-white">
-        <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3 text-sm">
           <span className="font-medium">Expenses this month</span>
-          <span className="tabular-nums text-neutral-500">{formatMoney(total)}</span>
+          <div className="flex items-center gap-4">
+            <span className="tabular-nums text-neutral-500">
+              − {formatMoney(debitTotal)}
+              {creditTotal > 0 && <span className="text-emerald-600"> · + {formatMoney(creditTotal)}</span>}
+            </span>
+            <button
+              onClick={() => setImportOpen(true)}
+              className="rounded-full border border-neutral-300 px-3 py-1 text-xs font-medium hover:bg-neutral-50"
+            >
+              Import CSV
+            </button>
+          </div>
         </div>
         {isLoading ? (
           <p className="px-4 py-6 text-sm text-neutral-500">Loading…</p>
@@ -148,6 +175,11 @@ export default function ExpensesPage() {
                     >
                       {expense.category.type}
                     </span>
+                    {expense.type === "CREDIT" && (
+                      <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
+                        Credit
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-neutral-500">
                     {new Date(expense.date).toLocaleDateString("en-IN", { timeZone: "UTC" })}
@@ -155,7 +187,9 @@ export default function ExpensesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="tabular-nums">{formatMoney(expense.amount)}</span>
+                  <span className={`tabular-nums ${expense.type === "CREDIT" ? "text-emerald-600" : ""}`}>
+                    {expense.type === "CREDIT" ? "+" : "−"} {formatMoney(expense.amount)}
+                  </span>
                   <button
                     onClick={() => remove(expense.id)}
                     className="text-xs font-medium text-red-600 hover:text-red-800"
@@ -168,6 +202,17 @@ export default function ExpensesPage() {
           </ul>
         )}
       </div>
+
+      {importOpen && categories && (
+        <ImportModal
+          categories={categories}
+          onClose={() => setImportOpen(false)}
+          onImported={() => {
+            mutate(expensesKey);
+            mutate((key) => typeof key === "string" && key.startsWith("/api/summary"));
+          }}
+        />
+      )}
     </div>
   );
 }

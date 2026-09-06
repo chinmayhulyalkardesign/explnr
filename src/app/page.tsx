@@ -3,6 +3,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import MonthPicker from "@/components/MonthPicker";
+import UnbilledSlider from "@/components/UnbilledSlider";
 import { currentMonthKey, formatMoney } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
 import type { Summary } from "@/lib/types";
@@ -36,17 +37,21 @@ export default function DashboardPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatCard label="Income" value={formatMoney(summary.totalIncome)} />
+            <StatCard
+              label="Income"
+              value={formatMoney(summary.totalIncome)}
+              hint={summary.totalCredit > 0 ? `+ ${formatMoney(summary.totalCredit)} credits` : undefined}
+            />
             <StatCard label="Budgeted" value={formatMoney(summary.totalBudgeted)} />
             <StatCard label="Spent" value={formatMoney(summary.totalSpent)} />
             <StatCard
-              label="Left over"
-              value={formatMoney(summary.leftover)}
-              tone={summary.leftover < 0 ? "negative" : "positive"}
+              label="Saved"
+              value={formatMoney(summary.saved)}
+              tone={summary.saved < 0 ? "negative" : "positive"}
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-lg border border-neutral-200 bg-white p-4">
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="font-medium">Fixed expenses</span>
@@ -65,6 +70,7 @@ export default function DashboardPage() {
               </div>
               <ProgressBar spent={summary.variable.spent} budget={summary.variable.budget} />
             </div>
+            <UnbilledSlider month={month} />
           </div>
 
           <div className="rounded-lg border border-neutral-200 bg-white">
@@ -115,16 +121,19 @@ function StatCard({
   label,
   value,
   tone,
+  hint,
 }: {
   label: string;
   value: string;
   tone?: "positive" | "negative";
+  hint?: string;
 }) {
   const toneClass = tone === "negative" ? "text-red-600" : tone === "positive" ? "text-emerald-600" : "text-neutral-900";
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-4">
       <div className="text-xs font-medium text-neutral-500">{label}</div>
       <div className={`mt-1 text-lg font-semibold tabular-nums ${toneClass}`}>{value}</div>
+      {hint && <div className="mt-0.5 text-xs text-emerald-600">{hint}</div>}
     </div>
   );
 }

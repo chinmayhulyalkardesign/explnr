@@ -11,6 +11,11 @@ enum CategoryType {
   VARIABLE
 }
 
+enum ExpenseType {
+  DEBIT
+  CREDIT
+}
+
 model Category {
   id            String    @id @default(cuid())
   name          String    @unique
@@ -32,14 +37,26 @@ model Income {
 }
 
 model Expense {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   amount      Float
+  type        ExpenseType @default(DEBIT)
   date        DateTime
   description String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime    @default(now())
 
   @@index([categoryId])
   @@index([date])
+}
+
+// One row per calendar month ("YYYY-MM"). Manually-entered running total of
+// unbilled credit card spend — money that will be billed *next* month, so
+// it's tracked for visibility but deliberately excluded from this month's
+// income/spend/budget math.
+model MonthlyUnbilled {
+  id        String   @id @default(cuid())
+  month     String   @unique
+  amount    Float    @default(0)
+  updatedAt DateTime @updatedAt
 }

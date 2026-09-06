@@ -28,11 +28,31 @@ integration would require.
   with expenses logged against them can't be hard-deleted (referential
   integrity is enforced at the DB level) — archive them instead.
 - **Income** — salary/other income entries (source, amount, date).
-- **Expense** — logged against a category (amount, date, description).
+- **Expense** — logged against a category (amount, date, description), with
+  a `DEBIT`/`CREDIT` type. A credit (refund, reimbursement) is excluded from
+  every category/fixed/variable total — it only adds to effective income for
+  the "Saved" figure, so it never distorts what a category actually cost.
+- **MonthlyUnbilled** — one manually-set ₹ amount per calendar month
+  representing pending credit card spend that hasn't been billed yet (so
+  it'll be owed *next* month). Capped at ₹80,000, purely informational —
+  excluded from all income/spend/budget math.
 
-The `/api/summary` endpoint aggregates all three by calendar month: total
-income, total budgeted, total spent, a fixed-vs-variable split, and
-per-category remaining budget.
+The `/api/summary` endpoint aggregates all of this by calendar month: total
+income, total credits, effective income, total budgeted, net spend (debits
+only), saved, a fixed-vs-variable split, and per-category remaining budget.
+
+### Importing a bank/card statement
+
+The Expenses page has an **Import CSV** button — upload a `.csv` export from
+your bank or card statement and it auto-detects the date/description/amount
+columns (including separate Debit/Credit columns, or a single signed Amount
+column), extracts a payee name from typical UPI narration strings
+(`UPI/P2A/<ref>/<PAYEE>/...`), and shows a review table where you assign a
+category to each row before anything is added. Deliberately CSV-only — no
+`.xlsx` support — because that avoids depending on a spreadsheet-parsing
+library on untrusted, user-uploaded files (the popular one, SheetJS/`xlsx`,
+has open prototype-pollution and ReDoS advisories with no fix on the npm-
+published version). Most bank/card portals offer CSV export alongside Excel.
 
 ## Getting started
 
