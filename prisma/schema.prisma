@@ -17,14 +17,32 @@ enum ExpenseType {
 }
 
 model Category {
-  id            String    @id @default(cuid())
-  name          String    @unique
+  id            String           @id @default(cuid())
+  name          String           @unique
   type          CategoryType
   monthlyBudget Float
-  archived      Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  archived      Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
   expenses      Expense[]
+  budgets       CategoryBudget[]
+}
+
+// Per-month override of a category's budget ("YYYY-MM"). When absent for a
+// given month, the category's own `monthlyBudget` is used as the default.
+// Editing this never rewrites what a past month's budget was — only that
+// month's override changes.
+model CategoryBudget {
+  id         String   @id @default(cuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  month      String
+  amount     Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([categoryId, month])
+  @@index([month])
 }
 
 model Income {

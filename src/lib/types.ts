@@ -9,6 +9,12 @@ export type Category = {
   archived: boolean;
 };
 
+// Returned by GET /api/categories?month=YYYY-MM
+export type CategoryWithMonthBudget = Category & {
+  budgetForMonth: number;
+  hasOverride: boolean;
+};
+
 export type Income = {
   id: string;
   source: string;

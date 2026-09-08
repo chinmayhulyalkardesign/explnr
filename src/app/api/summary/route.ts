@@ -7,7 +7,11 @@ export async function GET(request: NextRequest) {
   const { start, end } = monthRange(month);
 
   const [categories, income, expenses, unbilled] = await Promise.all([
-    prisma.category.findMany({ where: { archived: false }, orderBy: { name: "asc" } }),
+    prisma.category.findMany({
+      where: { archived: false },
+      orderBy: { name: "asc" },
+      include: { budgets: { where: { month } } },
+    }),
     prisma.income.findMany({ where: { date: { gte: start, lt: end } } }),
     prisma.expense.findMany({
       where: { date: { gte: start, lt: end } },
@@ -29,18 +33,19 @@ export async function GET(request: NextRequest) {
 
   const categoryBreakdown = categories.map((category) => {
     const spent = spentByCategory.get(category.id) ?? 0;
+    const budget = category.budgets[0]?.amount ?? category.monthlyBudget;
     return {
       id: category.id,
       name: category.name,
       type: category.type,
-      budget: category.monthlyBudget,
+      budget,
       spent,
-      remaining: category.monthlyBudget - spent,
+      remaining: budget - spent,
     };
   });
 
   const totalIncome = income.reduce((sum, entry) => sum + entry.amount, 0);
-  const totalBudgeted = categories.reduce((sum, c) => sum + c.monthlyBudget, 0);
+  const totalBudgeted = categoryBreakdown.reduce((sum, c) => sum + c.budget, 0);
   const totalSpent = categoryBreakdown.reduce((sum, c) => sum + c.spent, 0);
   const fixedSpent = categoryBreakdown.filter((c) => c.type === "FIXED").reduce((s, c) => s + c.spent, 0);
   const variableSpent = categoryBreakdown.filter((c) => c.type === "VARIABLE").reduce((s, c) => s + c.spent, 0);

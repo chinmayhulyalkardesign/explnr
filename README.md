@@ -24,9 +24,16 @@ integration would require.
 
 ## Data model
 
-- **Category** — name, `FIXED` or `VARIABLE`, monthly budget. Categories
-  with expenses logged against them can't be hard-deleted (referential
-  integrity is enforced at the DB level) — archive them instead.
+- **Category** — name, `FIXED` or `VARIABLE`, a default monthly budget.
+  Categories with expenses logged against them can't be hard-deleted
+  (referential integrity is enforced at the DB level) — archive them
+  instead.
+- **CategoryBudget** — an optional per-month override of a category's
+  budget (unique on category + `"YYYY-MM"`). The Categories page shows/edits
+  whichever month is selected; when no override exists for that month, the
+  category's default budget is used. Editing a month's budget never touches
+  any other month's — past months keep whatever they were actually budgeted
+  at.
 - **Income** — salary/other income entries (source, amount, date).
 - **Expense** — logged against a category (amount, date, description), with
   a `DEBIT`/`CREDIT` type. A credit (refund, reimbursement) is excluded from

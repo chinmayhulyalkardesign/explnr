@@ -45,3 +45,8 @@ export const upsertUnbilledSchema = z.object({
   month: z.string().regex(/^\d{4}-\d{2}$/, "Month must be YYYY-MM"),
   amount: z.coerce.number().min(0, "Amount cannot be negative").max(80_000, "Cap is ₹80,000"),
 });
+
+export const upsertCategoryBudgetSchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/, "Month must be YYYY-MM"),
+  amount: z.coerce.number().nonnegative("Budget cannot be negative").max(100_000_000),
+});

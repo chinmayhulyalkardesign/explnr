@@ -2,19 +2,29 @@
 
 import { FormEvent, useState } from "react";
 import useSWR, { mutate } from "swr";
-import { formatMoney } from "@/lib/format";
+import MonthPicker from "@/components/MonthPicker";
+import { currentMonthKey, formatMoney, formatMonthLabel } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
-import type { Category, CategoryType } from "@/lib/types";
+import type { CategoryType, CategoryWithMonthBudget } from "@/lib/types";
 
-const KEY = "/api/categories?includeArchived=true";
+function keyFor(month: string) {
+  return `/api/categories?includeArchived=true&month=${month}`;
+}
 
 export default function CategoriesPage() {
-  const { data: categories, isLoading } = useSWR<Category[]>(KEY, fetcher);
+  const [month, setMonth] = useState(currentMonthKey());
+  const key = keyFor(month);
+  const { data: categories, isLoading } = useSWR<CategoryWithMonthBudget[]>(key, fetcher);
   const [name, setName] = useState("");
   const [type, setType] = useState<CategoryType>("FIXED");
   const [budget, setBudget] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  function refresh() {
+    mutate(key);
+    mutate((k) => typeof k === "string" && k.startsWith("/api/summary"));
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -32,7 +42,7 @@ export default function CategoriesPage() {
       }
       setName("");
       setBudget("");
-      mutate(KEY);
+      refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -40,16 +50,16 @@ export default function CategoriesPage() {
     }
   }
 
-  async function toggleArchive(category: Category) {
+  async function toggleArchive(category: CategoryWithMonthBudget) {
     await fetch(`/api/categories/${category.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ archived: !category.archived }),
     });
-    mutate(KEY);
+    refresh();
   }
 
-  async function remove(category: Category) {
+  async function remove(category: CategoryWithMonthBudget) {
     if (!confirm(`Delete "${category.name}"? This only works if it has no expenses logged.`)) return;
     const res = await fetch(`/api/categories/${category.id}`, { method: "DELETE" });
     if (!res.ok) {
@@ -57,12 +67,15 @@ export default function CategoriesPage() {
       alert(body.error ?? "Failed to delete category");
       return;
     }
-    mutate(KEY);
+    refresh();
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold">Categories</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold">Categories</h1>
+        <MonthPicker month={month} onChange={setMonth} />
+      </div>
 
       <form onSubmit={handleSubmit} className="rounded-lg border border-neutral-200 bg-white p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
@@ -86,10 +99,10 @@ export default function CategoriesPage() {
             type="number"
             min="0"
             step="0.01"
-            placeholder="Monthly budget"
+            placeholder="Default monthly budget"
             value={budget}
             onChange={(e) => setBudget(e.target.value)}
-            className="w-40 rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className="w-44 rounded-md border border-neutral-300 px-3 py-2 text-sm"
           />
           <button
             type="submit"
@@ -103,6 +116,10 @@ export default function CategoriesPage() {
       </form>
 
       <div className="rounded-lg border border-neutral-200 bg-white">
+        <div className="border-b border-neutral-200 px-4 py-3 text-xs text-neutral-500">
+          Budget shown/edited below is for <span className="font-medium text-neutral-700">{formatMonthLabel(month)}</span>{" "}
+          only — changing it doesn&apos;t affect any other month.
+        </div>
         {isLoading ? (
           <p className="px-4 py-6 text-sm text-neutral-500">Loading…</p>
         ) : !categories || categories.length === 0 ? (
@@ -129,7 +146,11 @@ export default function CategoriesPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm tabular-nums text-neutral-500">{formatMoney(c.monthlyBudget)}</span>
+                  {c.archived ? (
+                    <span className="text-sm tabular-nums text-neutral-400">{formatMoney(c.budgetForMonth)}</span>
+                  ) : (
+                    <MonthBudgetCell category={c} month={month} onSaved={refresh} />
+                  )}
                   <button
                     onClick={() => toggleArchive(c)}
                     className="text-xs font-medium text-neutral-600 hover:text-neutral-900"
@@ -145,6 +166,77 @@ export default function CategoriesPage() {
           </ul>
         )}
       </div>
+    </div>
+  );
+}
+
+function MonthBudgetCell({
+  category,
+  month,
+  onSaved,
+}: {
+  category: CategoryWithMonthBudget;
+  month: string;
+  onSaved: () => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const value = draft ?? String(category.budgetForMonth);
+
+  async function commit() {
+    const amount = Number(draft);
+    setDraft(null);
+    if (draft === null || !Number.isFinite(amount) || amount === category.budgetForMonth) return;
+    setSaving(true);
+    try {
+      await fetch(`/api/categories/${category.id}/budget`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ month, amount }),
+      });
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function resetToDefault() {
+    setSaving(true);
+    try {
+      await fetch(`/api/categories/${category.id}/budget?month=${month}`, { method: "DELETE" });
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      {category.hasOverride && (
+        <button
+          onClick={resetToDefault}
+          title={`Reset to default (${formatMoney(category.monthlyBudget)})`}
+          className="text-[10px] font-medium text-neutral-400 hover:text-neutral-700"
+        >
+          reset
+        </button>
+      )}
+      <span className="text-neutral-400">₹</span>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={value}
+        disabled={saving}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+        className={`w-24 rounded border px-2 py-1 text-right text-sm tabular-nums ${
+          category.hasOverride ? "border-blue-300 bg-blue-50" : "border-neutral-300"
+        }`}
+        aria-label={`${category.name} budget for ${month}`}
+      />
     </div>
   );
 }

@@ -5,11 +5,28 @@ import { handleApiError } from "@/lib/api-error";
 
 export async function GET(request: NextRequest) {
   const includeArchived = request.nextUrl.searchParams.get("includeArchived") === "true";
+  const month = request.nextUrl.searchParams.get("month");
+
   const categories = await prisma.category.findMany({
     where: includeArchived ? undefined : { archived: false },
     orderBy: [{ archived: "asc" }, { name: "asc" }],
+    include: { budgets: month ? { where: { month } } : { take: 0 } },
   });
-  return NextResponse.json(categories);
+
+  const withEffectiveBudget = categories.map((c) => {
+    const override = c.budgets[0];
+    return {
+      id: c.id,
+      name: c.name,
+      type: c.type,
+      monthlyBudget: c.monthlyBudget,
+      archived: c.archived,
+      budgetForMonth: override ? override.amount : c.monthlyBudget,
+      hasOverride: Boolean(override),
+    };
+  });
+
+  return NextResponse.json(withEffectiveBudget);
 }
 
 export async function POST(request: NextRequest) {
