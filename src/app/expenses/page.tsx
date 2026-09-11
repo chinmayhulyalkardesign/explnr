@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import useSWR, { mutate } from "swr";
+import { Plus, Upload, Trash2, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import MonthPicker from "@/components/MonthPicker";
 import ImportModal from "@/components/ImportModal";
 import { currentMonthKey, formatMoney } from "@/lib/format";
@@ -77,8 +78,7 @@ export default function ExpensesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Expenses</h1>
+      <div className="flex items-center justify-end">
         <MonthPicker month={month} onChange={setMonth} />
       </div>
 
@@ -131,8 +131,9 @@ export default function ExpensesPage() {
           <button
             type="submit"
             disabled={submitting || !categories || categories.length === 0}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
+            <Plus size={15} />
             Add
           </button>
         </div>
@@ -149,8 +150,9 @@ export default function ExpensesPage() {
             </span>
             <button
               onClick={() => setImportOpen(true)}
-              className="rounded-full border border-neutral-300 px-3 py-1 text-xs font-medium hover:bg-neutral-50"
+              className="flex items-center gap-1 rounded-full border border-neutral-300 px-3 py-1 text-xs font-medium hover:bg-neutral-50"
             >
+              <Upload size={13} />
               Import CSV
             </button>
           </div>
@@ -187,13 +189,19 @@ export default function ExpensesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`tabular-nums ${expense.type === "CREDIT" ? "text-emerald-600" : ""}`}>
-                    {expense.type === "CREDIT" ? "+" : "−"} {formatMoney(expense.amount)}
+                  <span
+                    className={`flex items-center gap-0.5 tabular-nums ${
+                      expense.type === "CREDIT" ? "text-emerald-600" : ""
+                    }`}
+                  >
+                    {expense.type === "CREDIT" ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                    {formatMoney(expense.amount)}
                   </span>
                   <button
                     onClick={() => remove(expense.id)}
-                    className="text-xs font-medium text-red-600 hover:text-red-800"
+                    className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800"
                   >
+                    <Trash2 size={13} />
                     Delete
                   </button>
                 </div>

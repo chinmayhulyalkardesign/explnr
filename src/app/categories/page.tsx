@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import useSWR, { mutate } from "swr";
+import { Plus, Archive, ArchiveRestore, Trash2, RotateCcw } from "lucide-react";
 import MonthPicker from "@/components/MonthPicker";
 import { currentMonthKey, formatMoney, formatMonthLabel } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
@@ -87,8 +88,7 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Categories</h1>
+      <div className="flex items-center justify-end">
         <MonthPicker month={month} onChange={setMonth} />
       </div>
 
@@ -122,8 +122,9 @@ export default function CategoriesPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
+            <Plus size={15} />
             Add
           </button>
         </div>
@@ -168,11 +169,16 @@ export default function CategoriesPage() {
                   )}
                   <button
                     onClick={() => toggleArchive(c)}
-                    className="text-xs font-medium text-neutral-600 hover:text-neutral-900"
+                    className="flex items-center gap-1 text-xs font-medium text-neutral-600 hover:text-neutral-900"
                   >
+                    {c.archived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
                     {c.archived ? "Unarchive" : "Archive"}
                   </button>
-                  <button onClick={() => remove(c)} className="text-xs font-medium text-red-600 hover:text-red-800">
+                  <button
+                    onClick={() => remove(c)}
+                    className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800"
+                  >
+                    <Trash2 size={13} />
                     Delete
                   </button>
                 </div>
@@ -232,8 +238,9 @@ function MonthBudgetCell({
         <button
           onClick={resetToDefault}
           title={`Reset to default (${formatMoney(category.monthlyBudget)})`}
-          className="text-[10px] font-medium text-neutral-400 hover:text-neutral-700"
+          className="flex items-center gap-0.5 text-[10px] font-medium text-neutral-400 hover:text-neutral-700"
         >
+          <RotateCcw size={11} />
           reset
         </button>
       )}

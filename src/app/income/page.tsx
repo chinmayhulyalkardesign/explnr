@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import useSWR, { mutate } from "swr";
+import { Plus, Trash2 } from "lucide-react";
 import MonthPicker from "@/components/MonthPicker";
 import { currentMonthKey, formatMoney } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
@@ -56,8 +57,7 @@ export default function IncomePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Income</h1>
+      <div className="flex items-center justify-end">
         <MonthPicker month={month} onChange={setMonth} />
       </div>
 
@@ -96,8 +96,9 @@ export default function IncomePage() {
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
+            <Plus size={15} />
             Add
           </button>
         </div>
@@ -128,8 +129,9 @@ export default function IncomePage() {
                   <span className="tabular-nums">{formatMoney(entry.amount)}</span>
                   <button
                     onClick={() => remove(entry.id)}
-                    className="text-xs font-medium text-red-600 hover:text-red-800"
+                    className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800"
                   >
+                    <Trash2 size={13} />
                     Delete
                   </button>
                 </div>

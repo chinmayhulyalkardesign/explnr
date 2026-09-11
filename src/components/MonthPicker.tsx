@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { formatMonthLabel, monthRange } from "@/lib/format";
 
 type Props = {
@@ -19,19 +20,22 @@ export default function MonthPicker({ month, onChange }: Props) {
       <button
         type="button"
         onClick={() => onChange(shiftMonth(month, -1))}
-        className="rounded-md border border-neutral-300 px-2 py-1 text-sm hover:bg-neutral-100"
+        className="rounded-md border border-neutral-300 p-1 hover:bg-neutral-100"
         aria-label="Previous month"
       >
-        ←
+        <ChevronLeft size={16} />
       </button>
-      <span className="min-w-36 text-center text-sm font-medium">{formatMonthLabel(month)}</span>
+      <span className="flex min-w-36 items-center justify-center gap-1.5 text-center text-sm font-medium">
+        <Calendar size={14} className="text-neutral-400" />
+        {formatMonthLabel(month)}
+      </span>
       <button
         type="button"
         onClick={() => onChange(shiftMonth(month, 1))}
-        className="rounded-md border border-neutral-300 px-2 py-1 text-sm hover:bg-neutral-100"
+        className="rounded-md border border-neutral-300 p-1 hover:bg-neutral-100"
         aria-label="Next month"
       >
-        →
+        <ChevronRight size={16} />
       </button>
     </div>
   );

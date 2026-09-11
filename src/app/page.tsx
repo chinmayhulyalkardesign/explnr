@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
+import { Wallet, Target, Receipt, PiggyBank, Repeat, Shuffle, Layers, type LucideIcon } from "lucide-react";
 import MonthPicker from "@/components/MonthPicker";
 import UnbilledSlider from "@/components/UnbilledSlider";
 import { currentMonthKey, formatMoney } from "@/lib/format";
@@ -27,8 +28,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Dashboard</h1>
+      <div className="flex items-center justify-end">
         <MonthPicker month={month} onChange={setMonth} />
       </div>
 
@@ -38,13 +38,15 @@ export default function DashboardPage() {
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatCard
+              icon={Wallet}
               label="Income"
               value={formatMoney(summary.totalIncome)}
               hint={summary.totalCredit > 0 ? `+ ${formatMoney(summary.totalCredit)} credits` : undefined}
             />
-            <StatCard label="Budgeted" value={formatMoney(summary.totalBudgeted)} />
-            <StatCard label="Spent" value={formatMoney(summary.totalSpent)} />
+            <StatCard icon={Target} label="Budgeted" value={formatMoney(summary.totalBudgeted)} />
+            <StatCard icon={Receipt} label="Spent" value={formatMoney(summary.totalSpent)} />
             <StatCard
+              icon={PiggyBank}
               label="Saved"
               value={formatMoney(summary.saved)}
               tone={summary.saved < 0 ? "negative" : "positive"}
@@ -54,7 +56,10 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-lg border border-neutral-200 bg-white p-4">
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-medium">Fixed expenses</span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Repeat size={15} className="text-neutral-400" />
+                  Fixed expenses
+                </span>
                 <span className="text-neutral-500">
                   {formatMoney(summary.fixed.spent)} / {formatMoney(summary.fixed.budget)}
                 </span>
@@ -64,7 +69,10 @@ export default function DashboardPage() {
             </div>
             <div className="rounded-lg border border-neutral-200 bg-white p-4">
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-medium">Variable expenses</span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Shuffle size={15} className="text-neutral-400" />
+                  Variable expenses
+                </span>
                 <span className="text-neutral-500">
                   {formatMoney(summary.variable.spent)} / {formatMoney(summary.variable.budget)}
                 </span>
@@ -76,7 +84,10 @@ export default function DashboardPage() {
           </div>
 
           <div className="rounded-lg border border-neutral-200 bg-white">
-            <div className="border-b border-neutral-200 px-4 py-3 text-sm font-medium">By category</div>
+            <div className="flex items-center gap-1.5 border-b border-neutral-200 px-4 py-3 text-sm font-medium">
+              <Layers size={15} className="text-neutral-400" />
+              By category
+            </div>
             {summary.categories.length === 0 ? (
               <p className="px-4 py-6 text-sm text-neutral-500">
                 No categories yet. Add one on the Categories page to start budgeting.
@@ -134,11 +145,13 @@ function TopSpendList({ entries }: { entries: TopSpendEntry[] }) {
 }
 
 function StatCard({
+  icon: Icon,
   label,
   value,
   tone,
   hint,
 }: {
+  icon: LucideIcon;
   label: string;
   value: string;
   tone?: "positive" | "negative";
@@ -147,7 +160,10 @@ function StatCard({
   const toneClass = tone === "negative" ? "text-red-600" : tone === "positive" ? "text-emerald-600" : "text-neutral-900";
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-4">
-      <div className="text-xs font-medium text-neutral-500">{label}</div>
+      <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+        <Icon size={14} />
+        {label}
+      </div>
       <div className={`mt-1 text-lg font-semibold tabular-nums ${toneClass}`}>{value}</div>
       {hint && <div className="mt-0.5 text-xs text-emerald-600">{hint}</div>}
     </div>

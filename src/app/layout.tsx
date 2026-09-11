@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Budget Tracker",
+  title: "EXPLNR",
   description: "Categorize salary and track fixed vs variable expenses",
 };
 

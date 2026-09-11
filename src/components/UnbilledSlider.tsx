@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
+import { CreditCard } from "lucide-react";
 import { fetcher } from "@/lib/fetcher";
 import { formatMoney } from "@/lib/format";
 
@@ -34,7 +35,10 @@ export default function UnbilledSlider({ month }: { month: string }) {
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-4">
       <div className="mb-2 flex items-center justify-between text-sm">
-        <span className="font-medium">Unbilled credit card</span>
+        <span className="flex items-center gap-1.5 font-medium">
+          <CreditCard size={15} className="text-neutral-400" />
+          Unbilled credit card
+        </span>
         <span className={`tabular-nums ${over ? "text-red-600" : "text-neutral-500"}`}>
           {formatMoney(value)} / {formatMoney(CAP)}
         </span>
