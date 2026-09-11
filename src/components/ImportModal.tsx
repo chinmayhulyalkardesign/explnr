@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { buildRowsFromCsv, type ImportedRow } from "@/lib/statement-import";
-import type { Category } from "@/lib/types";
+import { buildRowsFromCsv, markDuplicates, type ImportedRow } from "@/lib/statement-import";
+import type { Category, Expense } from "@/lib/types";
 
 type Props = {
   categories: Category[];
@@ -15,6 +15,7 @@ export default function ImportModal({ categories, onClose, onImported }: Props) 
   const [fileError, setFileError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -29,6 +30,18 @@ export default function ImportModal({ categories, onClose, onImported }: Props) 
         return;
       }
       setRows(parsed);
+
+      const dates = parsed.map((r) => r.date).filter(Boolean).sort();
+      if (dates.length) {
+        setCheckingDuplicates(true);
+        try {
+          const res = await fetch(`/api/expenses?from=${dates[0]}&to=${dates[dates.length - 1]}`);
+          const existing: Expense[] = res.ok ? await res.json() : [];
+          setRows(markDuplicates(parsed, existing));
+        } finally {
+          setCheckingDuplicates(false);
+        }
+      }
     } catch {
       setFileError("Could not read that file. Make sure it's a valid .csv file.");
     }
@@ -42,19 +55,21 @@ export default function ImportModal({ categories, onClose, onImported }: Props) 
     setRows((prev) => prev.filter((r) => r.rid !== rid));
   }
 
-  const missingCat = rows.filter((r) => !r.categoryId).length;
-  const invalid = rows.filter((r) => !(r.amount > 0) || !r.name.trim()).length;
+  const included = rows.filter((r) => r.include);
+  const duplicateCount = rows.filter((r) => r.isDuplicate).length;
+  const missingCat = included.filter((r) => !r.categoryId).length;
+  const invalid = included.filter((r) => !(r.amount > 0) || !r.name.trim()).length;
   const problems: string[] = [];
   if (missingCat) problems.push(`${missingCat} row(s) need a category`);
   if (invalid) problems.push(`${invalid} row(s) need a name and amount`);
-  const canConfirm = rows.length > 0 && missingCat === 0 && invalid === 0;
+  const canConfirm = included.length > 0 && missingCat === 0 && invalid === 0;
 
   async function confirmImport() {
     setSubmitting(true);
     setSubmitError(null);
     try {
       const payload = {
-        rows: rows.map((r) => ({
+        rows: included.map((r) => ({
           categoryId: r.categoryId,
           amount: r.amount,
           type: r.type,
@@ -82,7 +97,7 @@ export default function ImportModal({ categories, onClose, onImported }: Props) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="flex max-h-[86vh] w-full max-w-3xl flex-col rounded-lg border border-neutral-200 bg-white">
+      <div className="flex max-h-[86vh] w-full max-w-4xl flex-col rounded-lg border border-neutral-200 bg-white">
         <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4">
           <h2 className="text-sm font-semibold">Import from CSV {rows.length > 0 && `— ${rows.length} row(s)`}</h2>
           <button onClick={onClose} className="text-neutral-500 hover:text-neutral-900" aria-label="Close">
@@ -102,17 +117,42 @@ export default function ImportModal({ categories, onClose, onImported }: Props) 
           ) : (
             <>
               <p className="mb-3 text-xs text-neutral-500">
-                Pick a category for each row, fix anything that looks off, then add them. Rows with no category can&apos;t be added.
+                {checkingDuplicates
+                  ? "Checking for entries you've already added…"
+                  : duplicateCount > 0
+                    ? `${duplicateCount} row(s) match an expense already in your data (same date, amount, and type) — unchecked by default so you don't double-enter them. Check the box to include one anyway.`
+                    : "Pick a category for each row, fix anything that looks off, then add them."}
               </p>
               <div className="space-y-2">
                 {rows.map((r) => (
-                  <div key={r.rid} className="grid grid-cols-1 gap-2 border-b border-dashed border-neutral-100 pb-2 sm:grid-cols-[1.4fr_110px_90px_90px_1.2fr_auto] sm:items-center">
+                  <div
+                    key={r.rid}
+                    className={`grid grid-cols-1 items-center gap-2 border-b border-dashed border-neutral-100 pb-2 sm:grid-cols-[auto_1.4fr_110px_90px_90px_1.2fr_auto] ${
+                      !r.include ? "opacity-50" : ""
+                    }`}
+                  >
                     <input
-                      value={r.name}
-                      onChange={(e) => updateRow(r.rid, { name: e.target.value })}
-                      className="rounded border border-neutral-300 px-2 py-1.5 text-sm"
-                      aria-label="Name"
+                      type="checkbox"
+                      checked={r.include}
+                      onChange={(e) => updateRow(r.rid, { include: e.target.checked })}
+                      aria-label={r.isDuplicate ? "Include possible duplicate" : "Include row"}
                     />
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        value={r.name}
+                        onChange={(e) => updateRow(r.rid, { name: e.target.value })}
+                        className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm"
+                        aria-label="Name"
+                      />
+                      {r.isDuplicate && (
+                        <span
+                          className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700"
+                          title="Matches an expense already in your data"
+                        >
+                          Duplicate
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="date"
                       value={r.date}
@@ -140,7 +180,9 @@ export default function ImportModal({ categories, onClose, onImported }: Props) 
                     <select
                       value={r.categoryId}
                       onChange={(e) => updateRow(r.rid, { categoryId: e.target.value })}
-                      className={`rounded border px-2 py-1.5 text-sm ${!r.categoryId ? "border-red-400 bg-red-50" : "border-neutral-300"}`}
+                      className={`rounded border px-2 py-1.5 text-sm ${
+                        r.include && !r.categoryId ? "border-red-400 bg-red-50" : "border-neutral-300"
+                      }`}
                       aria-label="Category"
                     >
                       <option value="">Choose category…</option>
@@ -170,10 +212,10 @@ export default function ImportModal({ categories, onClose, onImported }: Props) 
               </button>
               <button
                 onClick={confirmImport}
-                disabled={!canConfirm || submitting}
+                disabled={!canConfirm || submitting || checkingDuplicates}
                 className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
               >
-                {submitting ? "Adding…" : `Add ${rows.length} entries`}
+                {submitting ? "Adding…" : `Add ${included.length} entries`}
               </button>
             </div>
           </div>

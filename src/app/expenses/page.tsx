@@ -16,7 +16,7 @@ export default function ExpensesPage() {
   const [month, setMonth] = useState(currentMonthKey());
   const expensesKey = `/api/expenses?month=${month}`;
   const { data: expenses, isLoading } = useSWR<Expense[]>(expensesKey, fetcher);
-  const { data: categories } = useSWR<Category[]>("/api/categories", fetcher);
+  const { data: categories } = useSWR<Category[]>(`/api/categories?month=${month}`, fetcher);
 
   const [categoryId, setCategoryId] = useState("");
   const [amount, setAmount] = useState("");

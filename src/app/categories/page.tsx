@@ -51,11 +51,26 @@ export default function CategoriesPage() {
   }
 
   async function toggleArchive(category: CategoryWithMonthBudget) {
-    await fetch(`/api/categories/${category.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ archived: !category.archived }),
-    });
+    if (category.archived) {
+      await fetch(`/api/categories/${category.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archivedFrom: null }),
+      });
+    } else {
+      if (
+        !confirm(
+          `Archive "${category.name}" starting ${formatMonthLabel(month)}? It'll stay untouched in every earlier month.`,
+        )
+      ) {
+        return;
+      }
+      await fetch(`/api/categories/${category.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archivedFrom: month }),
+      });
+    }
     refresh();
   }
 

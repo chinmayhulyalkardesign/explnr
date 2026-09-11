@@ -21,7 +21,12 @@ model Category {
   name          String           @unique
   type          CategoryType
   monthlyBudget Float
-  archived      Boolean          @default(false)
+  // Null = never archived. Otherwise "YYYY-MM": the category is archived
+  // starting that month onward — any month before it is completely
+  // unaffected (still shows in that month's breakdown, still usable when
+  // adding an expense dated in that month). Archiving is a point-in-time
+  // action, not a retroactive one.
+  archivedFrom  String?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
   expenses      Expense[]

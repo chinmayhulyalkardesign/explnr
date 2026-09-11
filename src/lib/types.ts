@@ -42,6 +42,8 @@ export type CategorySummary = {
   remaining: number;
 };
 
+export type TopSpendEntry = { name: string; spent: number };
+
 export type Summary = {
   month: string;
   totalIncome: number;
@@ -52,7 +54,7 @@ export type Summary = {
   unallocatedSpent: number;
   saved: number;
   unbilled: number;
-  fixed: { budget: number; spent: number };
-  variable: { budget: number; spent: number };
+  fixed: { budget: number; spent: number; top: TopSpendEntry[] };
+  variable: { budget: number; spent: number; top: TopSpendEntry[] };
   categories: CategorySummary[];
 };

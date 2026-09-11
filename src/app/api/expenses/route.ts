@@ -4,11 +4,32 @@ import { createExpenseSchema } from "@/lib/validation";
 import { handleApiError } from "@/lib/api-error";
 import { monthRange } from "@/lib/format";
 
-export async function GET(request: NextRequest) {
+function dateRangeWhere(request: NextRequest) {
   const month = request.nextUrl.searchParams.get("month");
+  if (month) {
+    const { start, end } = monthRange(month);
+    return { gte: start, lt: end };
+  }
+
+  // Arbitrary inclusive [from, to] range of "YYYY-MM-DD" dates — used by the
+  // CSV import duplicate check, which needs to look across whatever span a
+  // statement export covers, not just a single calendar month.
+  const from = request.nextUrl.searchParams.get("from");
+  const to = request.nextUrl.searchParams.get("to");
+  if (from && to) {
+    const start = new Date(`${from}T00:00:00.000Z`);
+    const end = new Date(new Date(`${to}T00:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000);
+    return { gte: start, lt: end };
+  }
+
+  return undefined;
+}
+
+export async function GET(request: NextRequest) {
   const categoryId = request.nextUrl.searchParams.get("categoryId");
+  const dateWhere = dateRangeWhere(request);
   const where = {
-    ...(month ? { date: { gte: monthRange(month).start, lt: monthRange(month).end } } : {}),
+    ...(dateWhere ? { date: dateWhere } : {}),
     ...(categoryId ? { categoryId } : {}),
   };
   const expenses = await prisma.expense.findMany({

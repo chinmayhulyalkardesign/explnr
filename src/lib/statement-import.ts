@@ -9,7 +9,31 @@ export type ImportedRow = {
   amount: number;
   type: "DEBIT" | "CREDIT";
   categoryId: string; // "" until the user picks one
+  isDuplicate: boolean; // matches an expense already in the database
+  include: boolean; // whether this row will actually be submitted
 };
+
+function duplicateKey(date: string, amount: number, type: string): string {
+  return `${date}|${amount}|${type}`;
+}
+
+/**
+ * Flags rows that match an expense already in the database (same date,
+ * amount, and debit/credit type) so re-uploading an overlapping statement
+ * doesn't silently double-enter the same transactions. Matched rows start
+ * unchecked (include: false) but can still be included manually — a
+ * genuine repeat transaction (same amount, same day) does happen.
+ */
+export function markDuplicates(
+  rows: ImportedRow[],
+  existing: { date: string; amount: number; type: string }[],
+): ImportedRow[] {
+  const existingKeys = new Set(existing.map((e) => duplicateKey(e.date.slice(0, 10), e.amount, e.type)));
+  return rows.map((r) => {
+    const isDuplicate = r.date !== "" && existingKeys.has(duplicateKey(r.date, r.amount, r.type));
+    return { ...r, isDuplicate, include: !isDuplicate };
+  });
+}
 
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
@@ -172,7 +196,16 @@ export function buildRowsFromCsv(text: string): ImportedRow[] {
     const date = dateIdx >= 0 ? normalizeDateStr(cells[dateIdx]) : "";
 
     if (amount > 0 || name !== "Untitled entry") {
-      rows.push({ rid: `imp_${i}_${Math.random().toString(36).slice(2, 9)}`, name, date, amount, type, categoryId: "" });
+      rows.push({
+        rid: `imp_${i}_${Math.random().toString(36).slice(2, 9)}`,
+        name,
+        date,
+        amount,
+        type,
+        categoryId: "",
+        isDuplicate: false,
+        include: true,
+      });
     }
   });
 

@@ -8,8 +8,12 @@ export const createCategorySchema = z.object({
   monthlyBudget: z.coerce.number().nonnegative("Budget cannot be negative").max(100_000_000),
 });
 
+const monthSchema = z.string().regex(/^\d{4}-\d{2}$/, "Month must be YYYY-MM");
+
 export const updateCategorySchema = createCategorySchema.partial().extend({
-  archived: z.boolean().optional(),
+  // Null clears it (unarchive). A "YYYY-MM" string archives starting that
+  // month onward, leaving every earlier month unaffected.
+  archivedFrom: monthSchema.nullable().optional(),
 });
 
 export const createIncomeSchema = z.object({

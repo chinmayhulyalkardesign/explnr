@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { monthRange, currentMonthKey } from "@/lib/format";
+import { activeForMonth } from "@/lib/category-status";
 
 export async function GET(request: NextRequest) {
   const month = request.nextUrl.searchParams.get("month") ?? currentMonthKey();
@@ -8,7 +9,7 @@ export async function GET(request: NextRequest) {
 
   const [categories, income, expenses, unbilled] = await Promise.all([
     prisma.category.findMany({
-      where: { archived: false },
+      where: activeForMonth(month),
       orderBy: { name: "asc" },
       include: { budgets: { where: { month } } },
     }),
@@ -52,6 +53,13 @@ export async function GET(request: NextRequest) {
   const fixedBudget = categoryBreakdown.filter((c) => c.type === "FIXED").reduce((s, c) => s + c.budget, 0);
   const variableBudget = categoryBreakdown.filter((c) => c.type === "VARIABLE").reduce((s, c) => s + c.budget, 0);
 
+  const topSpent = (type: "FIXED" | "VARIABLE") =>
+    categoryBreakdown
+      .filter((c) => c.type === type && c.spent > 0)
+      .sort((a, b) => b.spent - a.spent)
+      .slice(0, 2)
+      .map((c) => ({ name: c.name, spent: c.spent }));
+
   // Debit expenses logged against categories that have since been archived still count
   // against spend, but won't appear in categoryBreakdown since it's sourced from active
   // categories only.
@@ -72,8 +80,8 @@ export async function GET(request: NextRequest) {
     unallocatedSpent,
     saved: effectiveIncome - netSpent,
     unbilled: unbilled?.amount ?? 0,
-    fixed: { budget: fixedBudget, spent: fixedSpent },
-    variable: { budget: variableBudget, spent: variableSpent },
+    fixed: { budget: fixedBudget, spent: fixedSpent, top: topSpent("FIXED") },
+    variable: { budget: variableBudget, spent: variableSpent, top: topSpent("VARIABLE") },
     categories: categoryBreakdown,
   });
 }

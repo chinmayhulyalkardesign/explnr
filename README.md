@@ -24,10 +24,14 @@ integration would require.
 
 ## Data model
 
-- **Category** — name, `FIXED` or `VARIABLE`, a default monthly budget.
-  Categories with expenses logged against them can't be hard-deleted
-  (referential integrity is enforced at the DB level) — archive them
-  instead.
+- **Category** — name, `FIXED` or `VARIABLE`, a default monthly budget, and
+  `archivedFrom` (`null`, or a `"YYYY-MM"` string). Archiving is a
+  point-in-time action, not retroactive: a category archived starting
+  October stays completely untouched in September and every month before
+  it — still shows in that month's breakdown, still usable when adding an
+  expense dated back then. Categories with expenses logged against them
+  can't be hard-deleted (referential integrity is enforced at the DB
+  level) — archive them instead.
 - **CategoryBudget** — an optional per-month override of a category's
   budget (unique on category + `"YYYY-MM"`). The Categories page shows/edits
   whichever month is selected; when no override exists for that month, the
@@ -46,7 +50,9 @@ integration would require.
 
 The `/api/summary` endpoint aggregates all of this by calendar month: total
 income, total credits, effective income, total budgeted, net spend (debits
-only), saved, a fixed-vs-variable split, and per-category remaining budget.
+only), saved, a fixed-vs-variable split (each with its top 1-2 spending
+categories, so the Dashboard can show what's actually driving that number
+without a trip to "By category"), and per-category remaining budget.
 
 ### Importing a bank/card statement
 
@@ -55,7 +61,12 @@ your bank or card statement and it auto-detects the date/description/amount
 columns (including separate Debit/Credit columns, or a single signed Amount
 column), extracts a payee name from typical UPI narration strings
 (`UPI/P2A/<ref>/<PAYEE>/...`), and shows a review table where you assign a
-category to each row before anything is added. Deliberately CSV-only — no
+category to each row before anything is added. Rows matching an expense
+already in the database (same date, amount, and debit/credit type) are
+flagged as possible duplicates and excluded by default — re-uploading a
+statement that overlaps one you already imported won't double-enter those
+transactions, though you can still check the box to include one if it's a
+genuine repeat. Deliberately CSV-only — no
 `.xlsx` support — because that avoids depending on a spreadsheet-parsing
 library on untrusted, user-uploaded files (the popular one, SheetJS/`xlsx`,
 has open prototype-pollution and ReDoS advisories with no fix on the npm-

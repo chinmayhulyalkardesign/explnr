@@ -6,7 +6,7 @@ import MonthPicker from "@/components/MonthPicker";
 import UnbilledSlider from "@/components/UnbilledSlider";
 import { currentMonthKey, formatMoney } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
-import type { Summary } from "@/lib/types";
+import type { Summary, TopSpendEntry } from "@/lib/types";
 
 function ProgressBar({ spent, budget }: { spent: number; budget: number }) {
   const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : spent > 0 ? 100 : 0;
@@ -60,6 +60,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <ProgressBar spent={summary.fixed.spent} budget={summary.fixed.budget} />
+              <TopSpendList entries={summary.fixed.top} />
             </div>
             <div className="rounded-lg border border-neutral-200 bg-white p-4">
               <div className="mb-2 flex items-center justify-between text-sm">
@@ -69,6 +70,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <ProgressBar spent={summary.variable.spent} budget={summary.variable.budget} />
+              <TopSpendList entries={summary.variable.top} />
             </div>
             <UnbilledSlider month={month} />
           </div>
@@ -113,6 +115,20 @@ export default function DashboardPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function TopSpendList({ entries }: { entries: TopSpendEntry[] }) {
+  if (!entries.length) return null;
+  return (
+    <div className="mt-2 space-y-0.5 border-t border-neutral-100 pt-2">
+      {entries.map((e) => (
+        <div key={e.name} className="flex items-center justify-between text-xs text-neutral-500">
+          <span className="truncate">{e.name}</span>
+          <span className="tabular-nums">{formatMoney(e.spent)}</span>
+        </div>
+      ))}
     </div>
   );
 }
