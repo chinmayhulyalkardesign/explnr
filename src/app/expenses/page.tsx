@@ -7,6 +7,7 @@ import MonthPicker from "@/components/MonthPicker";
 import ImportModal from "@/components/ImportModal";
 import { currentMonthKey, formatMoney } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
+import { categoryTypeBadgeClass } from "@/lib/category-status";
 import type { Category, Expense, ExpenseType } from "@/lib/types";
 
 function todayIso() {
@@ -169,11 +170,7 @@ export default function ExpensesPage() {
                   <div className="flex items-center gap-2 font-medium">
                     {expense.category.name}
                     <span
-                      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                        expense.category.type === "FIXED"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
+                      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${categoryTypeBadgeClass(expense.category.type)}`}
                     >
                       {expense.category.type}
                     </span>

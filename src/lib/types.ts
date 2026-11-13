@@ -1,4 +1,4 @@
-export type CategoryType = "FIXED" | "VARIABLE";
+export type CategoryType = "FIXED" | "VARIABLE" | "INVESTMENT";
 export type ExpenseType = "DEBIT" | "CREDIT";
 
 export type Category = {
@@ -52,10 +52,12 @@ export type Summary = {
   totalBudgeted: number;
   totalSpent: number;
   unallocatedSpent: number;
+  sip: number;
   saved: number;
   unbilled: number;
   fixed: { budget: number; spent: number; top: TopSpendEntry[] };
   variable: { budget: number; spent: number; top: TopSpendEntry[] };
+  investment: { budget: number; spent: number; top: TopSpendEntry[] };
   categories: CategorySummary[];
 };
 
@@ -67,6 +69,7 @@ export type MonthTrendPoint = {
   saved: number;
   fixedSpent: number;
   variableSpent: number;
+  sipSpent: number;
 };
 
 // Each row is { month: string, [categoryLabel: string]: number }

@@ -86,11 +86,12 @@ export default function SummaryPage() {
 
   const allTimeIncome = data.trend.reduce((s, t) => s + t.effectiveIncome, 0);
   const allTimeSpent = data.trend.reduce((s, t) => s + t.spent, 0);
-  const allTimeSaved = allTimeIncome - allTimeSpent;
+  const allTimeSip = data.trend.reduce((s, t) => s + t.sipSpent, 0);
+  const allTimeSaved = allTimeIncome - allTimeSpent - allTimeSip;
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
         <div className="rounded-lg border border-neutral-200 bg-white p-4">
           <div className="text-xs font-medium text-neutral-500">All-time income</div>
           <div className="mt-1 text-lg font-semibold tabular-nums">{money0(allTimeIncome)}</div>
@@ -98,6 +99,10 @@ export default function SummaryPage() {
         <div className="rounded-lg border border-neutral-200 bg-white p-4">
           <div className="text-xs font-medium text-neutral-500">All-time spent</div>
           <div className="mt-1 text-lg font-semibold tabular-nums">{money0(allTimeSpent)}</div>
+        </div>
+        <div className="rounded-lg border border-neutral-200 bg-white p-4">
+          <div className="text-xs font-medium text-neutral-500">All-time SIPs</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums text-violet-600">{money0(allTimeSip)}</div>
         </div>
         <div className="rounded-lg border border-neutral-200 bg-white p-4">
           <div className="text-xs font-medium text-neutral-500">All-time saved</div>
@@ -186,7 +191,6 @@ function CategoryHeatmap({ data }: { data: SummaryHistory }) {
         </tbody>
       </table>
       <p className="mt-2 flex items-center gap-1.5 text-xs text-neutral-400">
-        Darker = more spent that month.
         <span className="inline-flex items-center gap-1 rounded px-1 py-0.5" style={{ background: STATUS.critical, color: "#fff" }}>
           <TriangleAlert size={10} />
           red

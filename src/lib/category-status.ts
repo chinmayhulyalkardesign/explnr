@@ -1,4 +1,11 @@
 import type { Prisma } from "@prisma/client";
+import type { CategoryType } from "./types";
+
+export function categoryTypeBadgeClass(type: CategoryType): string {
+  if (type === "FIXED") return "bg-blue-100 text-blue-700";
+  if (type === "VARIABLE") return "bg-amber-100 text-amber-700";
+  return "bg-violet-100 text-violet-700";
+}
 
 /**
  * Prisma `where` fragment: categories active *as of* the given month.

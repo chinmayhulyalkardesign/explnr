@@ -63,10 +63,18 @@ export async function GET() {
 
   const byMonth = new Map<
     string,
-    { income: number; credit: number; debit: number; fixedDebit: number; variableDebit: number; byCategory: Map<string, number> }
+    {
+      income: number;
+      credit: number;
+      debit: number;
+      fixedDebit: number;
+      variableDebit: number;
+      investmentDebit: number;
+      byCategory: Map<string, number>;
+    }
   >();
   for (const m of months) {
-    byMonth.set(m, { income: 0, credit: 0, debit: 0, fixedDebit: 0, variableDebit: 0, byCategory: new Map() });
+    byMonth.set(m, { income: 0, credit: 0, debit: 0, fixedDebit: 0, variableDebit: 0, investmentDebit: 0, byCategory: new Map() });
   }
 
   for (const inc of incomes) {
@@ -79,10 +87,14 @@ export async function GET() {
       bucket.credit += exp.amount;
       continue;
     }
-    bucket.debit += exp.amount;
     const info = categoryNameById.get(exp.categoryId) ?? { name: exp.category.name, type: exp.category.type };
-    if (info.type === "FIXED") bucket.fixedDebit += exp.amount;
-    else bucket.variableDebit += exp.amount;
+    if (info.type === "INVESTMENT") {
+      bucket.investmentDebit += exp.amount;
+    } else {
+      bucket.debit += exp.amount;
+      if (info.type === "FIXED") bucket.fixedDebit += exp.amount;
+      else bucket.variableDebit += exp.amount;
+    }
 
     const label = topSet.has(info.name) ? info.name : "Other";
     bucket.byCategory.set(label, (bucket.byCategory.get(label) ?? 0) + exp.amount);
@@ -96,9 +108,10 @@ export async function GET() {
       income: b.income,
       effectiveIncome,
       spent: b.debit,
-      saved: effectiveIncome - b.debit,
+      saved: effectiveIncome - b.debit - b.investmentDebit,
       fixedSpent: b.fixedDebit,
       variableSpent: b.variableDebit,
+      sipSpent: b.investmentDebit,
     };
   });
 

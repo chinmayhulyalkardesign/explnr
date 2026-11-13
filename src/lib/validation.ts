@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const categoryTypeSchema = z.enum(["FIXED", "VARIABLE"]);
+export const categoryTypeSchema = z.enum(["FIXED", "VARIABLE", "INVESTMENT"]);
 
 export const createCategorySchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100),

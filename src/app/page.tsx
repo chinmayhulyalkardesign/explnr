@@ -7,6 +7,7 @@ import MonthPicker from "@/components/MonthPicker";
 import UnbilledSlider from "@/components/UnbilledSlider";
 import { currentMonthKey, formatMoney } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
+import { categoryTypeBadgeClass } from "@/lib/category-status";
 import type { Summary, TopSpendEntry } from "@/lib/types";
 
 function ProgressBar({ spent, budget }: { spent: number; budget: number }) {
@@ -100,9 +101,7 @@ export default function DashboardPage() {
                       <span className="flex items-center gap-2 font-medium">
                         {c.name}
                         <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                            c.type === "FIXED" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"
-                          }`}
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${categoryTypeBadgeClass(c.type)}`}
                         >
                           {c.type}
                         </span>

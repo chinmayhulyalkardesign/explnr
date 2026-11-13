@@ -6,6 +6,7 @@ import { Plus, Archive, ArchiveRestore, Trash2, RotateCcw } from "lucide-react";
 import MonthPicker from "@/components/MonthPicker";
 import { currentMonthKey, formatMoney, formatMonthLabel } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
+import { categoryTypeBadgeClass } from "@/lib/category-status";
 import type { CategoryType, CategoryWithMonthBudget } from "@/lib/types";
 
 function keyFor(month: string) {
@@ -108,6 +109,7 @@ export default function CategoriesPage() {
           >
             <option value="FIXED">Fixed</option>
             <option value="VARIABLE">Variable</option>
+            <option value="INVESTMENT">Investment</option>
           </select>
           <input
             required
@@ -149,9 +151,7 @@ export default function CategoriesPage() {
                     {c.name}
                   </span>
                   <span
-                    className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                      c.type === "FIXED" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"
-                    }`}
+                    className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${categoryTypeBadgeClass(c.type)}`}
                   >
                     {c.type}
                   </span>

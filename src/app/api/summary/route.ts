@@ -47,13 +47,17 @@ export async function GET(request: NextRequest) {
 
   const totalIncome = income.reduce((sum, entry) => sum + entry.amount, 0);
   const totalBudgeted = categoryBreakdown.reduce((sum, c) => sum + c.budget, 0);
-  const totalSpent = categoryBreakdown.reduce((sum, c) => sum + c.spent, 0);
+  // SIP/investment categories are money moved into investment, not spend --
+  // excluded from totalSpent/saved the same way Summary's all-time view treats them.
+  const totalSpent = categoryBreakdown.filter((c) => c.type !== "INVESTMENT").reduce((sum, c) => sum + c.spent, 0);
   const fixedSpent = categoryBreakdown.filter((c) => c.type === "FIXED").reduce((s, c) => s + c.spent, 0);
   const variableSpent = categoryBreakdown.filter((c) => c.type === "VARIABLE").reduce((s, c) => s + c.spent, 0);
+  const investmentSpent = categoryBreakdown.filter((c) => c.type === "INVESTMENT").reduce((s, c) => s + c.spent, 0);
   const fixedBudget = categoryBreakdown.filter((c) => c.type === "FIXED").reduce((s, c) => s + c.budget, 0);
   const variableBudget = categoryBreakdown.filter((c) => c.type === "VARIABLE").reduce((s, c) => s + c.budget, 0);
+  const investmentBudget = categoryBreakdown.filter((c) => c.type === "INVESTMENT").reduce((s, c) => s + c.budget, 0);
 
-  const topSpent = (type: "FIXED" | "VARIABLE") =>
+  const topSpent = (type: "FIXED" | "VARIABLE" | "INVESTMENT") =>
     categoryBreakdown
       .filter((c) => c.type === type && c.spent > 0)
       .sort((a, b) => b.spent - a.spent)
@@ -78,10 +82,12 @@ export async function GET(request: NextRequest) {
     totalBudgeted,
     totalSpent: netSpent,
     unallocatedSpent,
-    saved: effectiveIncome - netSpent,
+    sip: investmentSpent,
+    saved: effectiveIncome - netSpent - investmentSpent,
     unbilled: unbilled?.amount ?? 0,
     fixed: { budget: fixedBudget, spent: fixedSpent, top: topSpent("FIXED") },
     variable: { budget: variableBudget, spent: variableSpent, top: topSpent("VARIABLE") },
+    investment: { budget: investmentBudget, spent: investmentSpent, top: topSpent("INVESTMENT") },
     categories: categoryBreakdown,
   });
 }
