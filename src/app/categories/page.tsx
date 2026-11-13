@@ -52,6 +52,16 @@ export default function CategoriesPage() {
     }
   }
 
+  async function changeType(category: CategoryWithMonthBudget, newType: CategoryType) {
+    if (newType === category.type) return;
+    await fetch(`/api/categories/${category.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: newType }),
+    });
+    refresh();
+  }
+
   async function toggleArchive(category: CategoryWithMonthBudget) {
     if (category.archived) {
       await fetch(`/api/categories/${category.id}`, {
@@ -150,11 +160,16 @@ export default function CategoriesPage() {
                   <span className={`text-sm font-medium ${c.archived ? "text-neutral-400 line-through" : ""}`}>
                     {c.name}
                   </span>
-                  <span
-                    className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${categoryTypeBadgeClass(c.type)}`}
+                  <select
+                    value={c.type}
+                    disabled={c.archived}
+                    onChange={(e) => changeType(c, e.target.value as CategoryType)}
+                    className={`appearance-none rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide disabled:opacity-60 ${categoryTypeBadgeClass(c.type)}`}
                   >
-                    {c.type}
-                  </span>
+                    <option value="FIXED">Fixed</option>
+                    <option value="VARIABLE">Variable</option>
+                    <option value="INVESTMENT">Investment</option>
+                  </select>
                   {c.archived && (
                     <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
                       Archived
