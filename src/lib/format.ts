@@ -29,3 +29,10 @@ export function formatMonthLabel(key: string): string {
   const { start } = monthRange(key);
   return start.toLocaleDateString("en-IN", { month: "long", year: "numeric", timeZone: "UTC" });
 }
+
+/** Short "Sep '26" form for chart axis ticks. */
+export function formatMonthShort(key: string): string {
+  const { start } = monthRange(key);
+  const label = start.toLocaleDateString("en-IN", { month: "short", timeZone: "UTC" });
+  return `${label} '${String(start.getUTCFullYear()).slice(2)}`;
+}

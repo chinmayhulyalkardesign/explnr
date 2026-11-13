@@ -58,3 +58,25 @@ export type Summary = {
   variable: { budget: number; spent: number; top: TopSpendEntry[] };
   categories: CategorySummary[];
 };
+
+export type MonthTrendPoint = {
+  month: string;
+  income: number;
+  effectiveIncome: number;
+  spent: number;
+  saved: number;
+  fixedSpent: number;
+  variableSpent: number;
+};
+
+// Each row is { month: string, [categoryLabel: string]: number }
+export type CategoryMonthlyRow = Record<string, number | string>;
+
+export type SummaryHistory = {
+  months: string[];
+  trend: MonthTrendPoint[];
+  categories: string[];
+  categoryMonthly: CategoryMonthlyRow[];
+  categoryBudgetMonthly: CategoryMonthlyRow[];
+  categoryTotals: { name: string; spent: number }[];
+};

@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Tags, Wallet, Receipt } from "lucide-react";
+import { LayoutDashboard, Tags, Wallet, Receipt, BarChart3 } from "lucide-react";
 
 const LINKS = [
+  { href: "/summary", label: "Summary", icon: BarChart3 },
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/categories", label: "Categories", icon: Tags },
   { href: "/income", label: "Income", icon: Wallet },
